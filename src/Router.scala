@@ -1,10 +1,8 @@
-package sub
-
-import scala.util.Try
 import java.net.{URLDecoder, URLEncoder}
 import scala.reflect.ClassTag
+import scala.util.Try
 
-class SubRouter[TopPage : ClassTag] {
+class Router[TopPage : ClassTag] {
 
     case class PathItemMap[A] (
         fromPath : String => Option[A],
@@ -180,8 +178,8 @@ class SubRouter[TopPage : ClassTag] {
 }
 
 
-object SubMain {
-    val subRouter = new SubRouter[TopPage]
+object Main {
+    val subRouter = new Router[TopPage]
     import subRouter._
 
     // Page data
