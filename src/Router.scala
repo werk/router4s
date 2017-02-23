@@ -4,13 +4,66 @@ import scala.util.Try
 
 class Router[TopPage : ClassTag] {
 
-    case class PathItemMap[A] (
+    case class Tree[A <: TopPage] (
+        fromPath : List[String] => Option[A],
+        toPath : A => Option[List[String]],
+        prettyPaths : List[String]
+    ) {
+        def apply(branch: Branch[A, TopPage])(implicit classTagA : ClassTag[A]) : Tree[TopPage] = {
+            this.up.orElse(branch.build(this))
+        }
+
+        def up(implicit classTagA : ClassTag[A]) : Tree[TopPage] = {
+            // Make it possible to call this method twice as it is wrong to call broaden on a value of PathMap[TopPage]
+            // TODO is this correct?
+            if(classTagA == scala.reflect.classTag[TopPage]) {
+                return this.asInstanceOf[Tree[TopPage]]
+            }
+            Tree[TopPage](
+                fromPath = fromPath,
+                toPath = broaden(toPath, classTagA),
+                prettyPaths = prettyPaths
+            )
+        }
+
+        def orElse(that : Tree[A]) : Tree[A] = copy(
+            fromPath = orElseO(fromPath, that.fromPath),
+            toPath = orElseO(toPath, that.toPath),
+            prettyPaths = prettyPaths ++ that.prettyPaths
+        )
+    }
+
+    case class Branch[A <: TopPage : ClassTag, B <: TopPage : ClassTag] (
+        build : Tree[A] => Tree[B]
+    ) {
+        def apply[C <: TopPage : ClassTag] (child : Branch[B, C]) : Branch[A, TopPage] = {
+            val g : Tree[A] => Tree[TopPage] = {a =>
+                val b = build(a)
+                val c = child.build(b)
+                b.up.orElse(c.up)
+            }
+            Branch[A, TopPage](g)
+        }
+
+        // TODO support n children
+        def apply[C <: TopPage : ClassTag, D <: TopPage : ClassTag] (child1 : Branch[B, C], child2 : Branch[B, D]) : Branch[A, TopPage] = {
+            val g : Tree[A] => Tree[TopPage] = {a =>
+                val b = build(a)
+                val c = child1.build(b)
+                val d = child2.build(b)
+                b.up.orElse(c.up.orElse(d.up))
+            }
+            Branch[A, TopPage](g)
+        }
+    }
+
+    case class Node[A] (
         fromPath : String => Option[A],
         toPath : A => Option[String],
         name : String
     )
 
-    val long = PathItemMap[Long](
+    val long = Node[Long](
         fromPath = { path : String => for {
             l <- Try{path.toLong}.toOption
             if l.toString == path
@@ -19,63 +72,80 @@ class Router[TopPage : ClassTag] {
         name = "long"
     )
 
-    val string = PathItemMap[String](
+    val string = Node[String](
         fromPath = {path => Some(URLDecoder.decode(path, "UTF-8"))},
         toPath = {s => Some(URLEncoder.encode(s, "UTF-8"))},
         name = "string"
     )
 
-    case class SubPathMap[A <: TopPage : ClassTag, B <: TopPage : ClassTag] (
-        f : PathMap[A] => PathMap[B]
-    ) {
-        def apply[C <: TopPage : ClassTag] (child : SubPathMap[B, C]) : SubPathMap[A, TopPage] = {
-            val g : PathMap[A] => PathMap[TopPage] = {a =>
-                val b = f(a)
-                val c = child.f(b)
-                b.up.orElse(c.up)
-            }
-            SubPathMap[A, TopPage](g)
-        }
+    def constantRoot[A <: TopPage](name : String, a : A) = Tree[A](
+        fromPath = { path =>
+            Some(a).filter(_ => path == List(name))
+        },
+        toPath = {_ => Some(List(name))},
+        prettyPaths = List(s"'$name'->$a")
+    )
 
-        def apply[C <: TopPage : ClassTag, D <: TopPage : ClassTag] (child1 : SubPathMap[B, C], child2 : SubPathMap[B, D]) : SubPathMap[A, TopPage] = {
-            val g : PathMap[A] => PathMap[TopPage] = {a =>
-                val b = f(a)
-                val c = child1.f(b)
-                val d = child2.f(b)
-                b.up.orElse(c.up.orElse(d.up))
-            }
-            SubPathMap[A, TopPage](g)
-        }
-
-    }
-
-    case class PathMap[A <: TopPage] (
-        fromPath : List[String] => Option[A],
-        toPath : A => Option[List[String]],
-        prettyPaths : List[String]
-    ) {
-        def apply(subMap: SubPathMap[A, TopPage])(implicit classTagA : ClassTag[A]) : PathMap[TopPage] = {
-            this.up.orElse(subMap.f(this))
-        }
-
-        def up(implicit classTagA : ClassTag[A]) : PathMap[TopPage] = {
-            // Make it possible to call this method twice
-            if(classTagA == scala.reflect.classTag[TopPage]) {
-                return this.asInstanceOf[PathMap[TopPage]]
-            }
-            PathMap[TopPage](
-                fromPath = fromPath,
-                toPath = broaden(toPath, classTagA),
-                prettyPaths = prettyPaths
-            )
-        }
-
-        def orElse(that : PathMap[A]) : PathMap[A] = copy(
-            fromPath = orElseO(fromPath, that.fromPath),
-            toPath = orElseO(toPath, that.toPath),
-            prettyPaths = prettyPaths ++ that.prettyPaths
+    def constant[Page <: TopPage with Product : ClassTag, Parent <: TopPage : ClassTag](name : String, f : Parent => Page) = Branch[Parent, Page]({ parentTree: Tree[Parent] =>
+        Tree[Page](
+            fromPath = { path: List[String] =>
+                for {
+                    init <- Try {
+                        path.init
+                    }.toOption
+                    last <- Try {
+                        path.last
+                    }.toOption
+                    p <- parentTree.fromPath(init)
+                    if last == name
+                } yield f(p)
+            },
+            toPath = { a =>
+                val List(p: Parent) = a.productIterator.toList
+                parentTree.toPath(p).map(_ ++ List(name))
+            },
+            prettyPaths = parentTree.prettyPaths.map(_ + s" / '$name'->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
         )
-    }
+    })
+
+    def variableRoot[N, Page <: TopPage with Product : ClassTag](node : Node[N], f : N => Page) = Tree[Page](
+        fromPath = { path : List[String] =>
+            for {
+                last <- path.headOption.filter(_ => path.length == 1)
+                i <- node.fromPath(last)
+            } yield f(i)
+        },
+        toPath = {page =>
+            val List(i : N) = page.productIterator.toList
+            node.toPath(i).map{x => List(x)}
+        },
+        prettyPaths = List(s"${node.name}->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
+    )
+
+    def variable[N, Page <: TopPage with Product : ClassTag, Parent <: TopPage : ClassTag](node : Node[N],f : (Parent, N) => Page) = Branch[Parent, Page]({ parentTree: Tree[Parent] =>
+        Tree[Page](
+            fromPath = { path =>
+                for {
+                    init <- Try {
+                        path.init
+                    }.toOption
+                    last <- Try {
+                        path.last
+                    }.toOption
+                    p <- parentTree.fromPath(init)
+                    i <- node.fromPath(last)
+                } yield f(p, i)
+            },
+            toPath = { page =>
+                val List(parent: Parent, i: N) = page.productIterator.toList
+                for {
+                    parentPath <- parentTree.toPath(parent)
+                    itemPath <- node.toPath(i)
+                } yield parentPath ++ List(itemPath)
+            },
+            prettyPaths = parentTree.prettyPaths.map(_ + s" / ${node.name}->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
+        )
+    })
 
     private def orElseO[A, B, A1 <: A, B1 >: B](f: A => Option[B], g: A1 => Option[B1]): A1 => Option[B1] = {a1 =>
         f(a1).orElse(g(a1))
@@ -85,77 +155,4 @@ class Router[TopPage : ClassTag] {
         if(a.getClass == classTagA.runtimeClass) f(a.asInstanceOf[A])
         else None
     }
-
-    // Root
-    def constantRoot[A <: TopPage](name : String, a : A) = PathMap[A](
-        fromPath = { path =>
-            Some(a).filter(_ => path == List(name))
-        },
-        toPath = {_ => Some(List(name))},
-        prettyPaths = List(s"'$name'->$a")
-    )
-
-    // Non root
-    def constant[Page <: TopPage with Product : ClassTag, Parent <: TopPage : ClassTag](name : String, f : Parent => Page) = SubPathMap[Parent, Page]({ parentMap: PathMap[Parent] =>
-        PathMap[Page](
-            fromPath = { path: List[String] =>
-                for {
-                    init <- Try {
-                        path.init
-                    }.toOption
-                    last <- Try {
-                        path.last
-                    }.toOption
-                    p <- parentMap.fromPath(init)
-                    if last == name
-                } yield f(p)
-            },
-            toPath = { a =>
-                val List(p: Parent) = a.productIterator.toList
-                parentMap.toPath(p).map(_ ++ List(name))
-            },
-            prettyPaths = parentMap.prettyPaths.map(_ + s" / '$name'->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
-        )
-    })
-
-    // Root
-    def variableRoot[I, Page <: TopPage with Product : ClassTag](itemMap : PathItemMap[I], f : I => Page) = PathMap[Page](
-        fromPath = { path : List[String] =>
-            for {
-                last <- path.headOption.filter(_ => path.length == 1)
-                i <- itemMap.fromPath(last)
-            } yield f(i)
-        },
-        toPath = {page =>
-            val List(i : I) = page.productIterator.toList
-            itemMap.toPath(i).map{x => List(x)}
-        },
-        prettyPaths = List(s"${itemMap.name}->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
-    )
-
-    // Non root
-    def variable[I, Page <: TopPage with Product : ClassTag, Parent <: TopPage : ClassTag](itemMap : PathItemMap[I],f : (Parent, I) => Page) = SubPathMap[Parent, Page]({ parentMap: PathMap[Parent] =>
-        PathMap[Page](
-            fromPath = { path =>
-                for {
-                    init <- Try {
-                        path.init
-                    }.toOption
-                    last <- Try {
-                        path.last
-                    }.toOption
-                    p <- parentMap.fromPath(init)
-                    i <- itemMap.fromPath(last)
-                } yield f(p, i)
-            },
-            toPath = { page =>
-                val List(parent: Parent, i: I) = page.productIterator.toList
-                for {
-                    parentPath <- parentMap.toPath(parent)
-                    itemPath <- itemMap.toPath(i)
-                } yield parentPath ++ List(itemPath)
-            },
-            prettyPaths = parentMap.prettyPaths.map(_ + s" / ${itemMap.name}->${scala.reflect.classTag[Page].runtimeClass.getSimpleName}")
-        )
-    })
 }

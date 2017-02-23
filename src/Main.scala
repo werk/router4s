@@ -28,7 +28,7 @@ object Main {
             person,
             PersonEdit(person),
             PersonCars(person),
-            PersonCar(PersonCars(person), 42)
+            PersonCar(PersonCars(Person(Persons, "John Rambo")), 42)
         )
 
         router.prettyPaths.foreach(println)
