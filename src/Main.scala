@@ -1,3 +1,5 @@
+import Router.Branch
+
 object Pages {
     sealed trait Page
     case object Home extends Page
@@ -6,6 +8,7 @@ object Pages {
     case class PersonEdit(parent : Person) extends Page
     case class PersonCars(parent : Person) extends Page
     case class PersonCar(id : Long, parent : PersonCars) extends Page
+    case class About(parent : Home.type) extends Page
 }
 
 object Main {
@@ -22,7 +25,8 @@ object Main {
                     path(long, PersonCar)
                 )
             )
-        )
+        ),
+        path("about", About).apply() // TODO get rid of this apply
     )
 
     def main(args : Array[String]) : Unit = {
@@ -33,7 +37,8 @@ object Main {
             person,
             PersonEdit(person),
             PersonCars(person),
-            PersonCar(42, PersonCars(Person("John Rambo", Persons(Home))))
+            PersonCar(42, PersonCars(Person("John Rambo", Persons(Home)))),
+            About(Home)
         )
 
         router.prettyPaths.foreach(println)

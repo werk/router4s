@@ -11,8 +11,9 @@ object Router {
         prettyPaths: List[String],
         classTagA: Option[ClassTag[A]]
     ) {
-        def apply(branch: Branch[A, S, S])(implicit classTagA: ClassTag[A]): Tree[S, S] = {
-            this.up.orElse(branch.build(this))
+        def apply(branches: Branch[A, S, S]*) : Tree[S, S] = {
+            val trees = this.up +: branches.map(_.build(this))
+            trees.reduceLeft(_.orElse(_))
         }
 
         def up: Tree[S, S] = {
@@ -41,22 +42,11 @@ object Router {
     case class Branch[A <: S, B <: S, S](
         build: Tree[A, S] => Tree[B, S]
     ) {
-        def apply[C <: S](child: Branch[B, C, S]): Branch[A, S, S] = {
+        def apply(children: Branch[B, _ <: S, S]*): Branch[A, S, S] = {
             val g: Tree[A, S] => Tree[S, S] = { a =>
                 val b = build(a)
-                val c = child.build(b)
-                b.up.orElse(c.up)
-            }
-            Branch[A, S, S](g)
-        }
-
-        // TODO support n children
-        def apply[C <: S : ClassTag, D <: S : ClassTag](child1: Branch[B, C, S], child2: Branch[B, D, S]): Branch[A, S, S] = {
-            val g: Tree[A, S] => Tree[S, S] = { a =>
-                val b = build(a)
-                val c = child1.build(b)
-                val d = child2.build(b)
-                b.up.orElse(c.up.orElse(d.up))
+                val trees = b.up +: children.map(_.build(b).up)
+                trees.reduceLeft(_.orElse(_))
             }
             Branch[A, S, S](g)
         }
@@ -101,7 +91,7 @@ class Router[S] {
 
     import Router._
 
-    // Root
+    /** Root */
     def apply[A <: S : ClassTag](a : A) = Tree[A, S](
         fromPath = { path =>
             Some(a).filter(_ => path == List())
@@ -111,7 +101,7 @@ class Router[S] {
         classTagA = Some(classTag[A])
     )
 
-    // Constant sub-path
+    /** Constant sub-path */
     def apply[A <: S : ClassTag, B <: S with Product : ClassTag](name : String, f : A => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
         Tree[B, S](
             fromPath = { path: List[String] =>
@@ -135,7 +125,7 @@ class Router[S] {
         )
     })
 
-    // Variable sub-path
+    /** Variable sub-path */
     def apply[N, A <: S : ClassTag, B <: S with Product : ClassTag](node : Node[N],f : (N, A) => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
         Tree[B, S](
             fromPath = { path =>
@@ -147,8 +137,8 @@ class Router[S] {
                         path.last
                     }.toOption
                     p <- parentTree.fromPath(init)
-                    i <- node.fromPath(last)
-                } yield f(i, p)
+                    n <- node.fromPath(last)
+                } yield f(n, p)
             },
             toPath = { page =>
                 val List(i, parent : A) = page.productIterator.toList
@@ -157,7 +147,7 @@ class Router[S] {
                     itemPath <- node.toPath(i.asInstanceOf[N])
                 } yield parentPath ++ List(itemPath)
             },
-            prettyPaths = parentTree.prettyPaths.map(_ + s" / ${node.name}->${scala.reflect.classTag[B].runtimeClass.getSimpleName}"),
+            prettyPaths = parentTree.prettyPaths.map(_ + s" / ${node.name}->${classTag[B].runtimeClass.getSimpleName}"),
             classTagA = Some(classTag[B])
         )
     })
