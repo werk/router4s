@@ -80,7 +80,7 @@ class Router[S] {
     )
 
     /** Constant sub-path */
-    def apply[A <: S : ClassTag, B <: S with Product : ClassTag](name : String, f : A => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
+    def apply[A <: S, B <: S with Product : ClassTag](name : String, f : A => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
         Tree[B, S](
             fromPath = { path: List[String] =>
                 for {
@@ -104,7 +104,7 @@ class Router[S] {
     })
 
     /** Variable sub-path */
-    def apply[N, A <: S : ClassTag, B <: S with Product : ClassTag](node : Node[N],f : (N, A) => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
+    def apply[N, A <: S, B <: S with Product : ClassTag](node : Node[N],f : (N, A) => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
         Tree[B, S](
             fromPath = { path =>
                 for {
