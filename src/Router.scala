@@ -2,7 +2,6 @@ import java.net.{URLDecoder, URLEncoder}
 import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
 
-
 object Router {
 
     case class Tree[A <: S, S](
@@ -17,18 +16,12 @@ object Router {
         }
 
         def up: Tree[S, S] = {
-            // Make it possible to call this method twice as it is wrong to call broaden on a value of PathMap[TopPage]
-            // TODO is this correct?
             classTagA match {
-                case Some(tag) =>
-                    Tree[S, S](
-                        fromPath = fromPath,
-                        toPath = broaden(toPath, tag),
-                        prettyPaths = prettyPaths,
-                        None
-                    )
-                case None =>
-                    this.asInstanceOf[Tree[S, S]]
+                case Some(tag) => this.copy(
+                    toPath = broaden(toPath, tag),
+                    classTagA = None
+                )
+                case None => this.asInstanceOf[Tree[S, S]]
             }
         }
 
@@ -59,11 +52,9 @@ object Router {
     )
 
     val long = Node[Long](
-        fromPath = { path: String =>
+        fromPath = { path : String =>
             for {
-                l <- Try {
-                    path.toLong
-                }.toOption
+                l <- Try{path.toLong}.toOption
                 if l.toString == path
             } yield l
         },

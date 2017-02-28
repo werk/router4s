@@ -1,5 +1,3 @@
-import Router.Branch
-
 object Pages {
     sealed trait Page
     case object Home extends Page
