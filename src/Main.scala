@@ -1,34 +1,39 @@
 object Pages {
     sealed trait Page
-    case object Persons extends Page
-    case class Person(parent : Persons.type, name : String) extends Page
+    case object Home extends Page
+    case class Persons(parent : Home.type) extends Page
+    case class Person(name : String, parent : Persons) extends Page
     case class PersonEdit(parent : Person) extends Page
     case class PersonCars(parent : Person) extends Page
-    case class PersonCar(parent : PersonCars, id : Long) extends Page
+    case class PersonCar(id : Long, parent : PersonCars) extends Page
 }
 
 object Main {
     import Pages._
-    val subRouter = new Router[Page]
-    import subRouter._
+    import Router.{string, long}
 
-    val router =
-        constantRoot("people", Persons).apply(
-            variable(string, Person).apply(
-                constant("edit", PersonEdit),
-                constant("cars", PersonCars).apply(
-                    variable(long, PersonCar)
+    val path = new Router[Page]
+
+    val router = path(Home).apply(
+        path("people", Persons).apply(
+            path(string, Person).apply(
+                path("edit", PersonEdit),
+                path("cars", PersonCars).apply(
+                    path(long, PersonCar)
                 )
             )
         )
+    )
 
     def main(args : Array[String]) : Unit = {
-        val person = Person(Persons, "John Rambo")
-        val pages = List[Page](Persons,
+        val person = Person("John Rambo", Persons(Home))
+        val pages = List[Page](
+            Home,
+            Persons(Home),
             person,
             PersonEdit(person),
             PersonCars(person),
-            PersonCar(PersonCars(Person(Persons, "John Rambo")), 42)
+            PersonCar(42, PersonCars(Person("John Rambo", Persons(Home))))
         )
 
         router.prettyPaths.foreach(println)
