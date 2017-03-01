@@ -69,64 +69,81 @@ class Router[S] {
     import Router._
 
     /** Root */
-    def apply[A <: S : ClassTag](a : A) = Tree[A, S](
-        fromPath = { path =>
-            Some(a).filter(_ => path == List())
-        },
-        toPath = {s =>
-            Some(List()).filter(_ => s.getClass == classTag[A].runtimeClass)
-        },
-        prettyPaths = List(s"$a")
-    )
+    def apply[A <: S : ClassTag](a : A, branches : Branch[A, S, S]*) = {
+        val tree = Tree[A, S](
+            fromPath = { path =>
+                Some(a).filter(_ => path == List())
+            },
+            toPath = {s =>
+                Some(List()).filter(_ => s.getClass == classTag[A].runtimeClass)
+            },
+            prettyPaths = List(s"$a")
+        )
+        tree.apply(branches : _*)
+    }
 
     /** Constant sub-path */
-    def apply[A <: S, B <: S with Product : ClassTag](name : String, f : A => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
-        Tree[B, S](
-            fromPath = { path: List[String] =>
-                for {
-                    init <- Try(path.init).toOption
-                    last <- path.lastOption
-                    p <- parentTree.fromPath(init)
-                    if last == name
-                } yield f(p)
-            },
-            toPath = { s =>
-                if (s.getClass == classTag[B].runtimeClass) {
-                    val b = s.asInstanceOf[B]
-                    val List(a : A) = b.productIterator.toList
-                    parentTree.toPath(a).map(_ ++ List(name))
-                } else {
-                    None
-                }
-            },
-            prettyPaths = parentTree.prettyPaths.map(_ + s" / '$name'->${scala.reflect.classTag[B].runtimeClass.getSimpleName}")
-        )
-    })
+    def apply[A <: S, B <: S with Product : ClassTag](
+        name : String,
+        f : A => B,
+        subBranches: Branch[B, S, S]*
+    ) = {
+        val branch = Branch[A, B, S]({ parentTree: Tree[A, S] =>
+            Tree[B, S](
+                fromPath = { path: List[String] =>
+                    for {
+                        init <- Try(path.init).toOption
+                        last <- path.lastOption
+                        p <- parentTree.fromPath(init)
+                        if last == name
+                    } yield f(p)
+                },
+                toPath = { s =>
+                    if (s.getClass == classTag[B].runtimeClass) {
+                        val b = s.asInstanceOf[B]
+                        val List(a : A) = b.productIterator.toList
+                        parentTree.toPath(a).map(_ ++ List(name))
+                    } else {
+                        None
+                    }
+                },
+                prettyPaths = parentTree.prettyPaths.map(_ + s" / '$name'->${scala.reflect.classTag[B].runtimeClass.getSimpleName}")
+            )
+        })
+        branch.apply(subBranches : _*)
+    }
 
     /** Variable sub-path */
-    def apply[N, A <: S, B <: S with Product : ClassTag](node : Node[N],f : (N, A) => B) = Branch[A, B, S]({ parentTree: Tree[A, S] =>
-        Tree[B, S](
-            fromPath = { path =>
-                for {
-                    init <- Try(path.init).toOption
-                    last <- path.lastOption
-                    p <- parentTree.fromPath(init)
-                    n <- node.fromPath(last)
-                } yield f(n, p)
-            },
-            toPath = { s =>
-                if (s.getClass == classTag[B].runtimeClass) {
-                    val b = s.asInstanceOf[B]
-                    val List(i, a : A) = b.productIterator.toList
+    def apply[N, A <: S, B <: S with Product : ClassTag](
+        node : Node[N],
+        f : (N, A) => B,
+        subBranches: Branch[B, S, S]*
+    ) = {
+        val branch = Branch[A, B, S]({ parentTree: Tree[A, S] =>
+            Tree[B, S](
+                fromPath = { path =>
                     for {
-                        parentPath <- parentTree.toPath(a)
-                        itemPath <- node.toPath(i.asInstanceOf[N])
-                    } yield parentPath ++ List(itemPath)
-                } else {
-                    None
-                }
-            },
-            prettyPaths = parentTree.prettyPaths.map(_ + s" / ${node.name}->${classTag[B].runtimeClass.getSimpleName}")
-        )
-    })
+                        init <- Try(path.init).toOption
+                        last <- path.lastOption
+                        p <- parentTree.fromPath(init)
+                        n <- node.fromPath(last)
+                    } yield f(n, p)
+                },
+                toPath = { s =>
+                    if (s.getClass == classTag[B].runtimeClass) {
+                        val b = s.asInstanceOf[B]
+                        val List(i, a : A) = b.productIterator.toList
+                        for {
+                            parentPath <- parentTree.toPath(a)
+                            itemPath <- node.toPath(i.asInstanceOf[N])
+                        } yield parentPath ++ List(itemPath)
+                    } else {
+                        None
+                    }
+                },
+                prettyPaths = parentTree.prettyPaths.map(_ + s" / ${node.name}->${classTag[B].runtimeClass.getSimpleName}")
+            )
+        })
+        branch.apply(subBranches : _*)
+    }
 }

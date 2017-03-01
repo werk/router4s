@@ -15,16 +15,16 @@ object Main {
 
     val path = new Router[Page]
 
-    val router = path(Home).apply(
-        path("people", Persons).apply(
-            path(string, Person).apply(
+    val router = path(Home,
+        path("people", Persons,
+            path(string, Person,
                 path("edit", PersonEdit),
-                path("cars", PersonCars).apply(
+                path("cars", PersonCars,
                     path(long, PersonCar)
                 )
             )
         ),
-        path("about", About).apply() // TODO get rid of this apply
+        path("about", About)
     )
 
     def main(args : Array[String]) : Unit = {
