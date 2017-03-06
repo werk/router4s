@@ -1,17 +1,10 @@
-object Pages {
-    sealed trait Page
-    case object Home extends Page
-    case class Persons(parent : Home.type) extends Page
-    case class Person(name : String, parent : Persons) extends Page
-    case class PersonEdit(parent : Person) extends Page
-    case class PersonCars(parent : Person) extends Page
-    case class PersonCar(id : Long, parent : PersonCars) extends Page
-    case class About(parent : Home.type) extends Page
-}
+package com.github.werk.router
 
-object Main {
+import scala.scalajs.js.JSApp
+
+object TestApp extends JSApp {
     import Pages._
-    import Router.{string, long}
+    import Router.{long, string}
 
     val path = new Router[Page]
 
@@ -27,7 +20,7 @@ object Main {
         path("about", About)
     )
 
-    def main(args : Array[String]) : Unit = {
+    def main() : Unit = {
         val person = Person("John Rambo", Persons(Home))
         val pages = List[Page](
             Home,
@@ -56,3 +49,15 @@ object Main {
         }
     }
 }
+
+object Pages {
+    sealed trait Page
+    case object Home extends Page
+    case class Persons(parent : Home.type) extends Page
+    case class Person(name : String, parent : Persons) extends Page
+    case class PersonEdit(parent : Person) extends Page
+    case class PersonCars(parent : Person) extends Page
+    case class PersonCar(id : Long, parent : PersonCars) extends Page
+    case class About(parent : Home.type) extends Page
+}
+
