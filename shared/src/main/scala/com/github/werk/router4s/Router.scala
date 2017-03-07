@@ -10,6 +10,16 @@ object Router {
         toPath: S => Option[List[String]],
         prettyPaths: List[String]
     ) {
+        def data(path : String) : Option[A] = {
+            fromPath(path.split('/').toList.filter(_.nonEmpty))
+        }
+
+        def path(data : A) : String = {
+            toPath(data).map("/" + _.mkString("/")).getOrElse{
+                throw new RuntimeException(s"Router is unexhaustive. Failed on $data")
+            }
+        }
+
         def apply(branches: Branch[A, S, S]*) : Tree[S, S] = {
             val trees = this.up +: branches.map(_.build(this))
             trees.reduceLeft(_.orElse(_))
