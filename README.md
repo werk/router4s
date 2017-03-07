@@ -4,7 +4,7 @@ Router4s is a URL path routing library for Scala and Scala.js. It let you map yo
 
 This router was initially intended as a supplement to [React4s](https://github.com/Ahnfelt/react4s) (a simple React wrapper for Scala), but the project is self-contained and independent.
 
-# Example
+# Example/usage
 
 Say we are building a simple music database with the following kind of URLs
 
