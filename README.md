@@ -53,12 +53,12 @@ val router = path(Home,
 )
 ```
 
-The above lines are a bit tedious as they only let us choose the constant path items. But we now have a router, and it was build without reflection or macros, for anyone who care. Now let's give it a try.
+The above lines are a bit tedious to write, as they only let us choose the constant path items, the rest is boilerplate. But we now have a router, and it was build without reflection or user defined macros, for anyone who care. Now let's give it a try.
 
 ```scala
-# router.fromPath("/bands/Pink+Floyd/albums/42")
-> Some(BandAlbum(42,BandAlbums(Band(Pink+Floyd,Bands(Home)))))
+# router.data("/bands/Pink+Floyd/albums/42")
+> Some(BandAlbum(42,BandAlbums(Band(Pink Floyd,Bands(Home)))))
 
-# router.toPath(BandAlbum(42, BandAlbums(Band("Pink Floyd", Bands(Home)))))
-> Some(List(bands, Pink Floyd, albums, 42))
+# router.path(BandAlbum(42, BandAlbums(Band("Pink Floyd", Bands(Home)))))
+> "/bands/Pink+Floyd/albums/42"
 ```
