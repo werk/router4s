@@ -18,7 +18,7 @@ Say we are building a simple music database with the following kind of URLs
 /about 
 ```
 
-We then define the following sum type, where each case object/class correstponds, in order, to the URLs above
+We then define the following sum type, where each case object/class represents the URLs above
 
 ```scala
 sealed trait Page
