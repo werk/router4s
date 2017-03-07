@@ -1,4 +1,4 @@
-package com.github.werk.router
+package com.github.werk.router4s
 
 object Pages {
     sealed trait Page
