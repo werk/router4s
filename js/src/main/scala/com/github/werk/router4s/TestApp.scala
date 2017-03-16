@@ -1,11 +1,11 @@
 package com.github.werk.router4s
 
 import scala.scalajs.js.JSApp
-import Extra.string
 
 object TestApp extends JSApp {
     import Pages._
-    import Router.{long, string}
+    import Router.long
+    import Extra.string
 
     val path = new Router[Page]
 
