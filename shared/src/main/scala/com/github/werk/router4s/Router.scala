@@ -68,14 +68,17 @@ object Router {
         name = "long"
     )
 
-    val string = Node[String](
-        // TODO URLEncoder is not available in scala.js, find an alternative
-        //fromPath = { path => Some(URLDecoder.decode(path, "UTF-8")) },
-        //toPath = { s => Some(URLEncoder.encode(s, "UTF-8")) },
-        fromPath = { path => Some(path) },
-        toPath = { s => Some(s) },
-        name = "string"
+    val int = Node[Int](
+        fromPath = { path : String =>
+            for {
+                l <- Try(path.toInt).toOption
+                if l.toString == path
+            } yield l
+        },
+        toPath = { i => Some(i.toString) },
+        name = "int"
     )
+
 }
 
 class Router[S] {

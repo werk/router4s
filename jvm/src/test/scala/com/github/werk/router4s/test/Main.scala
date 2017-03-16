@@ -1,5 +1,7 @@
 package com.github.werk.router4s.test
 
+import com.github.werk.router4s.Extra.string
+
 object Pages {
     sealed trait Page
     case object Home extends Page
@@ -14,7 +16,7 @@ object Pages {
 object Main {
     import Pages._
     import com.github.werk.router4s.Router
-    import com.github.werk.router4s.Router.{long, string}
+    import com.github.werk.router4s.Router.long
 
     val path = new Router[Page]
 
