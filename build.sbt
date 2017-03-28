@@ -1,8 +1,8 @@
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.11.6"
 
 // TODO this is not working for me
-crossScalaVersions := Seq("2.11.8", scalaVersion.value)
+// crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 
 resolvers in ThisBuild += Resolver.sonatypeRepo("releases")
 
@@ -11,7 +11,7 @@ lazy val root = project.in(file(".")).
 
 lazy val router4s = crossProject.in(file("."))
     .settings(
-        scalaVersion := "2.12.1",
+        scalaVersion := "2.11.6",
         name := "router4s",
         organization := "com.github.werk",
         version := "0.1.0-SNAPSHOT",
@@ -50,8 +50,11 @@ lazy val router4s = crossProject.in(file("."))
     .jvmSettings(
     )
     .jsSettings(
-        libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+        libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.1",
+        libraryDependencies += "com.lihaoyi" %%% "utest" % "0.4.5" % "test",
+        testFrameworks += new TestFramework("utest.runner.Framework")
     )
+
 
 lazy val router4sJVM = router4s.jvm
 lazy val router4sJS = router4s.js

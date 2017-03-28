@@ -8,8 +8,8 @@ object Extra {
 
     // TODO how do I put this in the shared Router object?
     val string : Node[String] = Node[String](
-        fromPath = { path => Some(URLDecoder.decode(path, "UTF-8")) },
-        toPath = { s => Some(encodeURIComponent(s)) },
+        read = { path => Some(URLDecoder.decode(path, "UTF-8")) },
+        show = { s => Some(encodeURIComponent(s)) },
         name = "string"
     )
 
