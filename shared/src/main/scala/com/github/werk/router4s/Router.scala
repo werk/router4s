@@ -200,11 +200,11 @@ class Router[S] {
     }
 
     def query[N, A <: S, B <: S with Product : ClassTag](
-        parameterName : String,
-        parameterType : Node[N],
+        parameter : (String, Node[N]),
         f : (N, A) => B,
         subBranches : Branch[B, S, S]*
     ) = {
+        val (parameterName, parameterType) = parameter
         val branch = Branch[A, B, S]({ parentTree: Tree[A, S] =>
             Tree[B, S](
                 fromPath = { pathQuery =>

@@ -1,5 +1,7 @@
 package com.github.werk.router4s.test
 
+import scala.util.Try
+
 object Pages {
     sealed trait Page
     case object Home extends Page
@@ -23,7 +25,7 @@ object Main {
 
     val router = path(Home,
         path("bands", Bands,
-            path.query("limit", int, BandsLimit,
+            path.query("limit" -> int, BandsLimit,
                 path(string, Band,
                     path("edit", BandEdit),
                     path("albums", BandAlbums,
@@ -34,6 +36,47 @@ object Main {
         ),
         path("about", About)
     )
+
+
+    /*
+
+    sealed trait Page
+    case class Home(print : Option[Boolean]) extends Page
+    case class Bands(limit : Option[Int]) extends Page
+    case class Band(name : String, parent : Bands) extends Page
+    case class BandEdit(parent : Band) extends Page
+    case class BandAlbums(parent : Band) extends Page
+    case class BandAlbum(id : Long, parent : BandAlbums) extends Page
+    case class About(parent : Home.type) extends Page
+
+    val path = new Router[Page]
+
+    val router = path("print" -> option(boolean), Home,
+        path("bands", "limit" -> option(int), Bands,
+            path("version" -> long, Band,
+                path("edit", BandEdit),
+                path("albums", BandAlbums,
+                    path(long, BandAlbum)
+                )
+            )
+        ),
+        path("about", About)
+    )
+
+    val router = bind("mobile-version" -> boolean, Home,
+        bind("bands", "limit" -> int, "country" -> option(string), Bands,
+            path(string, "version" -> long, Band,
+                path("edit", BandEdit),
+                path("albums", BandAlbums,
+                    path(long, BandAlbum)
+                )
+            )
+        ),
+        path("about", About)
+    )
+
+
+     */
 
     println(router.data("/bands/Pink%20Floyd/albums/42?limit=12"))
     println(router.path(BandAlbum(42, BandAlbums(Band("Pink Floyd", BandsLimit(12, Bands(Home)))))))
