@@ -31,8 +31,9 @@ object DslExperiment {
     case class Router[A](){
         def child[B](part : RouterPart[A, B]) : Router[B] = ???
         def |[B](part : RouterPart[A, B]) : Router[B] = ???
+        def |[B](router : Router[B]) : Router[B] = ???
     }
-    case class RouterPart[A, B]() {
+    case class RouterPart[P, A]() {
     }
 
     // PathN where N is the number of variables in the path
@@ -177,26 +178,18 @@ object DslExperiment {
     )
      */
 
-    // Preferred
-    //sealed trait Page
-    //case object Home extends Page
-    //case class Bands(limit : Option[Int]) extends Page
-    //case class Band(name : String, bands : Bands) extends Page
-    //case class BandEdit(parent : Band) extends Page
-    //case class BandAlbums(band : Band) extends Page
-    //case class BandAlbum(id : Long, band : Band) extends Page
-    //case object About extends Page
-
     sealed trait Page
     case object Home extends Page
-    case class Bands(limit : Option[Int], parent : Home.type) extends Page
+    case class Bands(limit : Option[Int]) extends Page
     case class Band(name : String, bands : Bands) extends Page
     case class BandEdit(parent : Band) extends Page
     case class BandAlbums(band : Band) extends Page
-    case class BandAlbum(id : Long, band : Band) extends Page
+    case class BandAlbum(name : String, id : Long, band : Band) extends Page
     case object About extends Page
 
-    root | Home | (
-        "bands" & "limit" =? int | Bands
+
+    val p = "foo" / string | Band
+    val r2 = "bands" & "limit" =? int | Bands | (
+        "foo" / string | Band // | (...)
     )
 }
