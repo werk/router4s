@@ -5,7 +5,7 @@ import Extra.string
 
 object TestApp extends JSApp {
     import Pages._
-    import Router.{long, string}
+    import Router.long
 
     val path = new Router[Page]
 
