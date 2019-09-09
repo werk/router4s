@@ -1,5 +1,5 @@
 
-scalaVersion := "2.12.5"
+scalaVersion := "2.13.0"
 
 // TODO this is not working for me
 crossScalaVersions := Seq("2.11.8", scalaVersion.value)
@@ -11,7 +11,7 @@ lazy val root = project.in(file(".")).
 
 lazy val router4s = crossProject.in(file("."))
     .settings(
-        scalaVersion := "2.12.5",
+        scalaVersion := "2.13.0",
         name := "router4s",
         organization := "com.github.werk",
         version := "0.1.1-SNAPSHOT",
@@ -50,7 +50,7 @@ lazy val router4s = crossProject.in(file("."))
     .jvmSettings(
     )
     .jsSettings(
-        libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.5"
+        libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.7"
     )
 
 lazy val router4sJVM = router4s.jvm
