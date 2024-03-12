@@ -1,20 +1,20 @@
-scalaVersion in ThisBuild := "2.12.0"
+ThisBuild / scalaVersion := "2.13.13"
 
 // TODO this is not working for me
 //crossScalaVersions := Seq("2.11.8", scalaVersion.value)
 
-resolvers in ThisBuild += Resolver.sonatypeRepo("releases")
+ThisBuild / resolvers  += Resolver.sonatypeRepo("releases")
 
 lazy val root = project.in(file(".")).
     aggregate(router4sJS, router4sJVM)
 
-lazy val router4s = crossProject.in(file("."))
+lazy val router4s = crossProject(JSPlatform, JVMPlatform).in(file("."))
     .settings(
         name := "router4s",
         organization := "com.github.werk",
         version := "0.1.3-SNAPSHOT",
         publishMavenStyle := true,
-        publishArtifact in Test := false,
+        Test / publishArtifact := false,
         credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
         publishTo := {
             val nexus = "https://oss.sonatype.org/"

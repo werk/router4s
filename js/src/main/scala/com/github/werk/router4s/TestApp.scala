@@ -1,9 +1,10 @@
 package com.github.werk.router4s
 
-import scala.scalajs.js.JSApp
 import Extra.string
 
-object TestApp extends JSApp {
+import scala.scalajs.js.annotation.JSExportTopLevel
+
+object TestApp {
     import Pages._
     import Router.long
 
@@ -21,6 +22,7 @@ object TestApp extends JSApp {
         path("about", About)
     )
 
+    @JSExportTopLevel("TestApp")
     def main() : Unit = {
         val person = Person("John Rambo", Persons(Home))
         val pages = List[Page](
