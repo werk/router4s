@@ -1,5 +1,4 @@
-
-scalaVersion in ThisBuild := "2.13.0"
+scalaVersion in ThisBuild := "2.12.0"
 
 // TODO this is not working for me
 //crossScalaVersions := Seq("2.11.8", scalaVersion.value)
@@ -13,7 +12,7 @@ lazy val router4s = crossProject.in(file("."))
     .settings(
         name := "router4s",
         organization := "com.github.werk",
-        version := "0.1.2-SNAPSHOT",
+        version := "0.1.3-SNAPSHOT",
         publishMavenStyle := true,
         publishArtifact in Test := false,
         credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
