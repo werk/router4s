@@ -12,7 +12,7 @@ lazy val router4s = crossProject(JSPlatform, JVMPlatform).in(file("."))
     .settings(
         name := "router4s",
         organization := "com.github.werk",
-        version := "0.1.3-SNAPSHOT",
+        version := "0.1.4-SNAPSHOT",
         publishMavenStyle := true,
         Test / publishArtifact := false,
         credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
